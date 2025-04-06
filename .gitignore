@@ -1,0 +1,33 @@
+# Python bytecode files
+*.pyc
+*.pyo
+__pycache__/
+.pytest_cache/
+
+# Distribution and build artifacts
+/build/
+dist/
+*.egg-info/
+*.whl
+*.tar.gz
+
+# Virtual environment (if not using global Python)
+venv/
+env/
+.venv/
+.env/
+
+# IDE/editor configurations
+.vscode/
+.idea/
+
+# Test and coverage artifacts
+.coverage
+nosetests.xml
+pytest-debug.log
+*.cover
+
+# Miscellaneous
+*.log
+*.bak
+*.swp
