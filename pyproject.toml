@@ -18,3 +18,9 @@ classifiers = [
 
 [tool.setuptools]
 package-dir = {"" = "src"}
+
+[tool.pytest.ini_options]
+testpaths = [
+    "set_1",
+    "set_2",
+]
