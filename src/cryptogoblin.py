@@ -290,19 +290,23 @@ class AES_128:
         #generate round keys
         self.roundKeys = self._keyExpansion()
 
-    def encrypt(self, pb: bytes, modOp: str = None) -> bytes:
+    def encrypt(self, pb: bytes, modOp: str = None, IV: bytes = None) -> bytes:
 
         match modOp:
             case 'ECB':
                 return self._encipherECB(pb)
+            case 'CBC':
+                return self._encipherCBC(pb, IV)
             case 'None':
                 return self._encipher(pb)
             
-    def decrypt(self, cb: bytes, modOp: str = None) -> bytes:
+    def decrypt(self, cb: bytes, modOp: str = None, IV: bytes = None) -> bytes:
 
         match modOp:
             case 'ECB':
                 return self._decipherECB(cb)
+            case 'CBC':
+                return self._decipherCBC(cb, IV)
             case 'None':
                 return self._decipher(cb)
             
@@ -310,6 +314,7 @@ class AES_128:
 
     #As defined in NIST SP 800-38A
     #https://csrc.nist.gov/pubs/sp/800/38/a/final
+
     def _encipherECB(self, pb: bytes) -> bytes:
         ppb = pad(pb)
         nBlocks = len(ppb)//16
@@ -319,6 +324,37 @@ class AES_128:
     def _decipherECB(self, cb: bytes) -> bytes:
         nBlocks = len(cb)//16
         blocks = [self._decipher(cb[i*16:i*16+16]) for i in range(nBlocks)]
+
+        #remove padding
+        padding = blocks[-1][-1]
+        blocks = blocks[:-1] + [blocks[-1][:-padding]]
+
+        return b''.join(blocks)
+    
+    def _encipherCBC(self, pb: bytes, IV:bytes) -> bytes:
+        ppb = pad(pb)
+        nBlocks = len(ppb)//16
+
+        #first block is XORed with Initialization Vector
+        blocks = [self._encipher(fixedXOR(IV, ppb[0:16]))]
+
+        #XOR every input block with last output block before encryption
+        for i in range(1, nBlocks):
+            blocks.append(self._encipher(fixedXOR(blocks[-1], ppb[i*16:i*16+16])))
+
+        return b''.join(blocks)
+
+    def _decipherCBC(self, cb: bytes, IV:bytes) -> bytes:
+        nBlocks = len(cb)//16
+
+        #starting from last block, decrypt last cipher block and XOR with previous cipher block
+        blocks = [fixedXOR(self._decipher(cb[i*16:i*16+16]), cb[(i-1)*16:(i-1)*16+16]) for i in range(nBlocks-1, 0, -1)]
+        
+        #last block XOR with IV
+        blocks.append(fixedXOR(IV, self._decipher(cb[0:16])))
+
+        #reverse list for correct order
+        blocks.reverse()
 
         #remove padding
         padding = blocks[-1][-1]
