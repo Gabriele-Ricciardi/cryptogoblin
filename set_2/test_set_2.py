@@ -21,3 +21,11 @@ def test_detectionECBCBCOracle():
     #Cryptopals Set 2 Challenge 11
     oracle = cg.ECBCBCOracle()
     assert(cg.detectECBCBCOracle(oracle) == oracle.encMet)
+
+def test_breakECBOracle():
+    #Cryptopals Set 2 Challenge 12
+    with open('./set_2/12_decrypted.txt', encoding='utf-8') as d:
+        plain = ''.join(list(d))
+
+    oracle = cg.ECBOracle()
+    assert(cg.breakECBOracle(oracle).decode() == plain)

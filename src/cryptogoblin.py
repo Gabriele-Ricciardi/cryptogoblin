@@ -628,3 +628,65 @@ def detectECBCBCOracle(oracle: ECBCBCOracle) -> str:
         encMet = 'CBC'
 
     return encMet
+
+class ECBOracle:
+
+    def __init__(self):
+        #generate 16-byte random key
+        self.key = secrets.token_bytes(16)
+        self._oracle = AES_128(self.key)
+
+    def query(self, input: bytes) -> bytes:
+        app = bytes.fromhex(base64ToHex('Um9sbGluJyBpbiBteSA1LjAKV2l0aCBteSByYWctdG9wIGRvd24gc28gbXkgaGFpciBjYW4gYmxvdwpUaGUgZ2lybGllcyBvbiBzdGFuZGJ5IHdhdmluZyBqdXN0IHRvIHNheSBoaQpEaWQgeW91IHN0b3A/IE5vLCBJIGp1c3QgZHJvdmUgYnkK'))
+        return self._oracle.encrypt(input + app, 'ECB')
+
+def breakECBOracle(oracle) -> bytes:
+
+    #test for cipher block length
+    msg = b''
+    startSize = len(oracle.query(msg))
+    newSize = startSize
+
+    #keep adding until change of block
+    while startSize == newSize:
+        msg += b'A'
+        newSize = len(oracle.query(msg))
+
+    #cipher size and number of blocks
+    cSize = newSize - startSize
+    nBlocks = startSize // cSize
+
+    #number of bytes padded of the unknown message
+    padding = len(msg) - 1
+
+    #check if ECB
+    modOp = detectECBCBCOracle(oracle)
+    if modOp == 'CBC':
+        return null
+
+    decrypted = b''
+
+    #for each byte in the cipher
+    for c in range(startSize-1, padding, -1):
+    
+        #craft msg one byte short of cipher block
+        sMsg = b'A'*(c)
+        msg = sMsg + decrypted
+
+        #create dictionary of last known block encryption
+        blocks = {}
+
+        #query entries for each char
+        #and store in dictionary
+        #reduced to 127 to enhance performace
+        for i in range(127):
+            tb = oracle.query(msg + i.to_bytes())[startSize-16:startSize]
+            blocks[tb] = i.to_bytes()
+
+        #query for guessed block with shorter message
+        guessedBlock = oracle.query(sMsg)[startSize-16:startSize]
+
+        #get byte used to obtain guessed block
+        decrypted += blocks[guessedBlock]
+    
+    return decrypted
