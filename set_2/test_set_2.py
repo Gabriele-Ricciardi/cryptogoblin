@@ -16,3 +16,8 @@ def test_AESCBC():
     x = cg.AES_128('YELLOW SUBMARINE'.encode())
     IV = b'\x00'*16
     assert(x.decrypt(bytes.fromhex(cipher),'CBC', IV).decode() == plain)
+
+def test_detectionECBCBCOracle():
+    #Cryptopals Set 2 Challenge 11
+    oracle = cg.ECBCBCOracle()
+    assert(cg.detectECBCBCOracle(oracle) == oracle.encMet)

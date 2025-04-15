@@ -1,3 +1,5 @@
+import secrets
+
 def hexToBase64(hx: str) -> str:
     #Base64 chars as in RFC 4648
     chars = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/','=']
@@ -586,3 +588,43 @@ def detectECB(c: bytes) -> list:
                 break
     
     return candidates
+
+class ECBCBCOracle:
+    
+    def __init__(self):
+        #randomly choose encryption method
+        self.encMet = secrets.choice(['ECB','CBC'])
+
+    def query(self, input: bytes) -> bytes:
+        #generate 16-byte random key
+        key = secrets.token_bytes(16)
+
+        #create AES object
+        oracle = AES_128(key)
+        
+        #bytes to prepend and append
+        np = 5 + secrets.randbelow(6)
+        na = 5 + secrets.randbelow(6)
+
+        #prepend and append bytes
+        input = secrets.token_bytes(np) + input + secrets.token_bytes(na)
+
+        #generate random IV. Not used in ECB
+        IV = secrets.token_bytes(16)
+
+        #return encrypted input message
+        return oracle.encrypt(input, self.encMet, IV)
+
+def detectECBCBCOracle(oracle: ECBCBCOracle) -> str:
+    msg = b'YELLOW SUBMARINE'*3
+
+    #query oracle with msg
+    cipher = oracle.query(msg)
+
+    #if second and third blocks are equal, ECB was used
+    if cipher[16:32] == cipher[32:48]:
+        encMet = 'ECB'
+    else:
+        encMet = 'CBC'
+
+    return encMet
